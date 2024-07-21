@@ -1,0 +1,93 @@
+# %%
+# Import libraries
+import gym
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Create Taxi environment
+env = gym.make("Taxi-v3")
+
+# Q-table represents the rewards (Q-values) the agent can expect performing a certain action in a certain state
+state_space = env.observation_space.n  # total number of states
+action_space = env.action_space.n  # total number of actions
+qtable = np.zeros((state_space, action_space))  # initialize Q-table with zeros
+
+# Variables for training/testing
+test_episodes = 20000  # number of episodes for testing
+train_episodes = 40000  # number of episodes for training
+episodes = train_episodes + test_episodes  # total number of episodes
+max_steps = 100  # maximum number of steps per episode
+
+# Q-learning algorithm hyperparameters to tune
+# Q-learning algorithm hyperparameters to tune
+alpha = 0.35  # learning rate: you may change it to see the difference
+gamma = 0.75  # discount factor: you may change it to see the difference
+
+# Exploration-exploitation trade-off
+epsilon = 1.0  # probability the agent will explore (initial value is 1.0)
+epsilon_min = 0.001  # minimum value of epsilon
+epsilon_decay = 0.9999  # decay multiplied with epsilon after each episode
+
+# TODO:
+# Implement Q-learning algorithm to train the agent to be a better taxi driver.
+# Plot the reward with respect to each episode (during the training and testing phases).
+# Plot the number of steps taken with each episode (during the training and testing phases).
+rewards = []
+steps = []
+
+# for each episode loop
+for episode in range(episodes):
+    state = env.reset()
+    if isinstance(state, tuple):
+        state = state[0]  # Extract the state if env.reset() returns a tuple
+
+    total_rewards = 0
+    total_steps = 0
+    for step in range(max_steps):
+        if np.random.uniform(0, 1) < epsilon:
+            action = env.action_space.sample()
+        else:
+            action = np.argmax(qtable[state, :])
+        new_state, reward, done, _, _ = env.step(action)
+        print(
+            f"Episode: {episode}, Step: {step}, State: {state}, Action: {action}, New State: {new_state}, Reward: {reward}")
+
+        # Ensure state and action are integers
+        if isinstance(state, int) and isinstance(action, int):
+            # Update Q(s, a) using the Q-learning formula
+            qtable[state, action] = qtable[state, action] + alpha * (
+                        reward + gamma * np.max(qtable[new_state, :]) - qtable[state, action])
+        else:
+            print(f"Invalid state or action: State: {state}, Action: {action}")
+
+        qtable[state, action] = qtable[state, action] + alpha * (reward + gamma * np.max(qtable[new_state, :]) - qtable[state, action])
+        total_rewards += reward
+        state = new_state
+        total_steps += 1
+
+        if done:
+            break
+    if epsilon > epsilon_min:
+        epsilon *= epsilon_decay
+
+    rewards.append(total_rewards)
+    steps.append(total_steps)
+
+
+# Plot the rewards
+plt.plot(rewards)
+plt.title("Reward per Episode")
+plt.xlabel("Episode")
+plt.ylabel("Rewards")
+plt.axvline(x=train_episodes, color='r', linestyle='--', label='Convergence Line')
+plt.grid(True)
+plt.show()
+
+# Plot the number of steps
+plt.plot(steps)
+plt.title("Required Steps per Episode")
+plt.xlabel("Episodes")
+plt.ylabel("Number of Steps")
+plt.axvline(x=train_episodes, color='r', linestyle='--', label='Convergence Line')
+plt.grid(True)
+plt.show()
