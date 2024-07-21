@@ -1,0 +1,74 @@
+import numpy as np
+
+
+# Define the grid dimensions
+grid_size = (3, 3)
+q_table = np.zeros(grid_size + (4, ))
+actions = ['up', 'down', 'right', 'left']
+action_dic = {0: 'up', 1: 'down', 2: 'left', 3: 'right'}
+
+learning_rate = 0.01
+gamma = 0.9
+
+
+# Sets reward rulers
+rewards = {'step': -1, 'goal': 10, 'wrong': -15}
+goal_position = (2, 2)
+wrong_position = (1, 1)
+
+
+# Start to move
+def step(state, action):
+    if action == 'up':
+        next_state = (max(state[0]-1, 0), state[1]) # Zeile und Spalte
+    elif action == 'down':
+        next_state = (min(state[0]+1, grid_size[0]-1), state[1])
+    elif action == 'right':
+        next_state = (state[0], min(state[1]+1, grid_size[1]-1))
+    elif action == 'left':
+        next_state = (state[0], max(state[1]-1, 0))
+
+    if next_state == goal_position:
+        reward = rewards['goal']
+        print("Here ist goal position")
+    elif next_state == wrong_position:
+        reward = rewards['wrong']
+        print("Here is wrong position")
+    else:
+        reward = rewards['step']
+
+    return next_state, reward
+
+
+alpha = 0.01
+gamma = 0.9
+
+#Episode 1
+episode1_action = ['right', 'down', 'left', 'up', 'right']
+episode1_state = [(0, 0)]
+current_state = (0, 0)
+for action in episode1_action:
+    next_state, reward = step(current_state, action)
+    best_next_action = np.argmax(q_table[next_state])
+    q_table[current_state][action.index(action)] += alpha * (reward + gamma * q_table[next_state][best_next_action] - q_table[current_state][action.index(action)])
+    current_state = next_state
+    episode1_state.append(current_state)
+
+# Episode 2: From location (2, 0): up, up, right
+episode2_actions = ['up', 'up', 'right']
+episode2_states = [(2, 0)]
+current_state = (2, 0)
+for action in episode2_actions:
+    next_state, reward = step(current_state, action)
+    best_next_action = np.argmax(q_table[next_state])
+    q_table[current_state][actions.index(action)] += alpha * (reward + gamma * q_table[next_state][best_next_action] - q_table[current_state][actions.index(action)])
+    current_state = next_state
+    episode2_states.append(current_state)
+
+# Print the updated Q-table
+print("Updated Q-table after Episode 1 and Episode 2:")
+print(q_table)
+
+# Print the final states for both episodes
+print("Episode 1 states:", episode1_state)
+print("Episode 2 states:", episode2_states)
